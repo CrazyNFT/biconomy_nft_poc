@@ -1,15 +1,7 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
-
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
-
-/**
- * @title Biconomy_nft_poc
- * @notice An ERC1155 compliant NFT token
- * @author matt@mattprimeonline.com
- */
+pragma solidity ^0.8.0;
+import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC1155/ERC1155.sol';
+import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol';
+import 'https://github.com/CrazyNFT/biconomy_nft_poc/blob/master/contracts/BaseRelayRecipient.sol';
 contract Biconomy_nft_poc is ERC1155, Ownable, BaseRelayRecipient {
 
     // Hashes of NFT pictures on IPFS
@@ -68,35 +60,16 @@ contract Biconomy_nft_poc is ERC1155, Ownable, BaseRelayRecipient {
     function versionRecipient() external override view returns (string memory) {
       return "V4";
     }
-
-    /**
-     * return the sender of this call.
-     * if the call came through our trusted forwarder, return the original sender.
-     * otherwise, return `msg.sender`.
-     * should be used in the contract anywhere instead of msg.sender
-     */
-    function _msgSender() internal override(BaseRelayRecipient,Context) view returns (address payable ret) {
+    function _msgSender() internal override(BaseRelayRecipient,Context) view returns (address sender) {
         if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {
-            // At this point we know that the sender is a trusted forwarder,
-            // so we trust that the last bytes of msg.data are the verified sender address.
-            // extract sender address from the end of msg.data
             assembly {
-                ret := shr(96,calldataload(sub(calldatasize(),20)))
+                sender := shr(96, calldataload(sub(calldatasize(), 20))) 
             }
         } else {
             return msg.sender;
         }
     }
-
-    /**
-     * return the msg.data of this call.
-     * if the call came through our trusted forwarder, then the real sender was appended as the last 20 bytes
-     * of the msg.data - so this method will strip those 20 bytes off.
-     * otherwise, return `msg.data`
-     * should be used in the contract instead of msg.data, where the difference matters (e.g. when explicitly
-     * signing or hashing the
-     */
-      function _msgData() internal override(BaseRelayRecipient,Context) view returns (bytes memory ret) {
+      function _msgData() internal override(Context) view returns (bytes memory ret) {
           if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {
               // At this point we know that the sender is a trusted forwarder,
               // we copy the msg.data , except the last 20 bytes (and update the total length)
