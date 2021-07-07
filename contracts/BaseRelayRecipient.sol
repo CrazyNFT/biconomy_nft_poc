@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "irelayrecipient.sol";
+import "https://github.com/CrazyNFT/biconomy_nft_poc/blob/master/contracts/IRelayRecipient.sol";
 
 /**
  * A base contract to be inherited by any contract that want to receive relayed transactions
