@@ -1,61 +1,67 @@
 pragma solidity ^0.8.0;
-import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC1155/ERC1155.sol';
-import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol';
+import 'https://github.com/CrazyNFT/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol';
+import 'https://github.com/CrazyNFT/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol';
 import 'https://github.com/CrazyNFT/biconomy_nft_poc/blob/master/contracts/BaseRelayRecipient.sol';
-contract Biconomy_nft_poc is ERC1155, Ownable, BaseRelayRecipient {
 
-    // Hashes of NFT pictures on IPFS
-    string[] public hashes;
+contract Biconomy_nft_poc is ERC721, Ownable, BaseRelayRecipient {
+        using Strings for uint256;
 
-    // Mapping for enforcing unique hashes
-    mapping(string => bool) _hashExists;
+        // Optional mapping for token URIs
+        mapping (uint256 => string) private _tokenURIs;
+        // Base URI
+        string private _baseURIextended;
 
-    // Mapping from ipfs picture hash to NFT tokenID
-    mapping (string => uint256) private _hashToken;
-
-    event NFTMinted(address creator, uint256 tokenId);
-
-    constructor() public ERC1155("https://exampleurl/tokenmetadata/{id}.json") {
-      trustedForwarder = 0x4D373d1B9a0367219a5f6547B8DfaC39f846F6a9;
-    }
-
-    function setTrustedForwarder(address _trustedForwarder) public {
-      trustedForwarder = _trustedForwarder;
-    }
+        function setTrustedForwarder(address _trustedForwarder) public {
+          trustedForwarder = _trustedForwarder;
+        }
 
 
-    /**
-     * @notice Mints a new NFT
-     * @param _hash IPFS picture hash of the NFT
-     */
-    function mint(string memory _hash) public {
-        require(!_hashExists[_hash], "Token with this hash is already minted");
+        constructor(string memory _name, string memory _symbol)
+            ERC721(_name, _symbol)
+        {
+            
+        }
 
-        hashes.push(_hash);
-        uint256 _id = hashes.length - 1;
-        _mint(_msgSender(), _id, 1, "");
+        function setBaseURI(string memory baseURI_) external onlyOwner() {
+            _baseURIextended = baseURI_;
+        }
 
-        _hashExists[_hash] = true;
-        _hashToken[_hash] = _id;
+        function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
+            require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+            _tokenURIs[tokenId] = _tokenURI;
+        }
 
-        emit NFTMinted(_msgSender(), _id);
-    }
+        function _baseURI() internal view virtual override returns (string memory) {
+            return _baseURIextended;
+        }
 
-    /**
-     * @notice Returns the TokenID of nft
-     * @return tokenID of the nft
-     */
-    function getTokenID(string memory _hash) public view returns (uint256 tokenID) {
-        return _hashToken[_hash];
-    }
+        function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+            require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-    /**
-     * @notice Returns the number of minted nfts
-     * @return count the number of nfts
-     */
-    function getNftCount() public view returns (uint256 count) {
-        return hashes.length;
-    }
+            string memory _tokenURI = _tokenURIs[tokenId];
+            string memory base = _baseURI();
+
+            // If there is no base URI, return the token URI.
+            if (bytes(base).length == 0) {
+                return _tokenURI;
+            }
+            // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+            if (bytes(_tokenURI).length > 0) {
+                return string(abi.encodePacked(base, _tokenURI));
+            }
+            // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
+            return string(abi.encodePacked(base, tokenId.toString()));
+        }
+
+
+        function mint(
+            address _to,
+            uint256 _tokenId,
+            string memory tokenURI_
+        ) external onlyOwner() {
+            _mint(_to, _tokenId);
+            _setTokenURI(_tokenId, tokenURI_);
+        }
 
     function versionRecipient() external override view returns (string memory) {
       return "V4";
