@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.0 ;
 
 /**
  * a contract must implement this interface in order to support relayed transaction.
